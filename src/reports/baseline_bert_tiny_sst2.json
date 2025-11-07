@@ -1,0 +1,10 @@
+{
+  "model": "prajjwal1/bert-tiny",
+  "dataset": "glue/sst2:validation",
+  "device": "mps",
+  "num_samples": 500,
+  "batch_size": 32,
+  "accuracy": 0.544,
+  "avg_latency_ms_per_sample": 3.92,
+  "seed": 42
+}

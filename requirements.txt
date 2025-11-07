@@ -1,0 +1,5 @@
+numpy
+tqdm
+pyyaml
+jsonschema
+torchvision  # will install with torch separately

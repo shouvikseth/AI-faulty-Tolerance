@@ -1,0 +1,20 @@
+name: mnist_tensor_topk
+dataset: { kind: mnist, split: test, batch_size: 64 }
+model:   { kind: SmallCNN, weights: out/mnist_smallcnn.pt }
+
+inject:
+  enabled: true
+  p: 1.0e-6
+  bit_width: 32
+  target_layers: ["Linear[-1]"]
+
+trials:  { max: 150, seed_base: 50000 }
+logging: { path: out/runs_mnist_topk.jsonl, validate: true }
+resume:  true
+
+eval:
+  mode: topk   # top1 | topk
+  k: 3         # accept if clean top-1 is inside injected top-k
+
+guards:
+  clip_p: 0.999    # optional percentile clip on injected logits; omit to disable

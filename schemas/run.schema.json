@@ -1,0 +1,39 @@
+
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SDC Run Log Line",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["trial", "outcome", "seed", "device"],
+  "properties": {
+    "trial": { "type": "integer", "minimum": 0 },
+    "seed":  { "type": "integer" },
+    "device": { "type": "string", "minLength": 1 },
+
+    "timestamp": { "type": "string" },
+
+    "model": { "type": "string" },
+    "dataset": { "type": "string" },
+
+    "layer_id": { "type": "string" },
+    "layer_idx": { "type": "integer", "minimum": 0 },
+
+    "p": { "type": "number", "minimum": 0, "maximum": 1 },
+    "bit_mode": { "type": ["string", "integer"] },
+
+    "elements_seen":    { "type": "integer", "minimum": 0 },
+    "elements_flipped": { "type": "integer", "minimum": 0 },
+
+    "avg_latency_ms_per_sample": { "type": "number", "minimum": 0 },
+
+    "changed":      { "type": "integer", "minimum": 0 },
+    "changed_rate": { "type": "number", "minimum": 0 },
+
+    "outcome": {
+      "type": "string",
+      "enum": ["CLEAN", "WRONG", "CRASH", "DETECTED"]
+    },
+
+    "error": { "type": "string" }
+  }
+}

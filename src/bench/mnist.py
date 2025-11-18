@@ -1,4 +1,5 @@
-import argparse, torch, torch.nn as nn, torch.optim as optim
+import argparse, os
+import torch, torch.nn as nn, torch.optim as optim
 import torchvision as tv
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
@@ -6,7 +7,7 @@ from torch.utils.data import DataLoader
 def get_data():
     tfm = T.Compose([T.ToTensor()])
     train = tv.datasets.MNIST(root="./data", train=True, download=True, transform=tfm)
-    test = tv.datasets.MNIST(root="./data", train=False, download=True, transform=tfm)
+    test  = tv.datasets.MNIST(root="./data", train=False, download=True, transform=tfm)
     return DataLoader(train, batch_size=128, shuffle=True), DataLoader(test, batch_size=256)
 
 class SmallCNN(nn.Module):
@@ -20,16 +21,23 @@ class SmallCNN(nn.Module):
             nn.MaxPool2d(2),
             nn.Flatten(),
             nn.Linear(64*7*7, 128), nn.ReLU(),
-            nn.Linear(128, 10)
+            nn.Linear(128, 10),
         )
     def forward(self, x): return self.net(x)
+
+def pick_device():
+    if torch.backends.mps.is_available():   # Apple GPU
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
 
 def train_one_epoch(m, dl, device):
     m.train()
     opt = optim.Adam(m.parameters(), lr=1e-3)
     lossf = nn.CrossEntropyLoss()
-    for x,y in dl:
-        x,y = x.to(device), y.to(device)
+    for x, y in dl:
+        x, y = x.to(device), y.to(device)
         logits = m(x); loss = lossf(logits, y)
         opt.zero_grad(); loss.backward(); opt.step()
 
@@ -37,23 +45,33 @@ def train_one_epoch(m, dl, device):
 def evaluate(m, dl, device):
     m.eval()
     total = correct = 0
-    for x,y in dl:
-        x,y = x.to(device), y.to(device)
+    for x, y in dl:
+        x, y = x.to(device), y.to(device)
         logits = m(x); pred = logits.argmax(1)
         correct += (pred == y).sum().item(); total += y.numel()
-    print({"acc": correct/total})
+    print({"acc": correct / total})
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--train", type=int, default=1)
-    ap.add_argument("--eval", type=int, default=1)
+    ap.add_argument("--eval",  type=int, default=1)
+    ap.add_argument("--out",   default="out/mnist_smallcnn.pt")
     args = ap.parse_args()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    device = pick_device()
     train_dl, test_dl = get_data()
     m = SmallCNN().to(device)
-    if args.train > 0:
-        for _ in range(args.train): train_one_epoch(m, train_dl, device)
-    if args.eval: evaluate(m, test_dl, device)
-    torch.save(m.state_dict(), "out/mnist_smallcnn.pt")
 
-if __name__ == "__main__": main()
+    if args.train > 0:
+        for _ in range(args.train):
+            train_one_epoch(m, train_dl, device)
+
+    if args.eval:
+        evaluate(m, test_dl, device)
+
+    # ensure output dir exists
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    torch.save(m.state_dict(), args.out)
+
+if __name__ == "__main__":
+    main()

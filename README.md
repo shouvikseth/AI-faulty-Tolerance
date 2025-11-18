@@ -23,3 +23,4 @@ python -m src.campaign.run --p 1e-6 --trials 200 --jsonl out/runs.jsonl
 ## Summarize
 python -m src.analysis.summarize out/runs.jsonl
 # computer_structures
+# computer_structures

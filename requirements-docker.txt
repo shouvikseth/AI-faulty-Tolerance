@@ -1,6 +1,8 @@
---extra-index-url https://download.pytorch.org/whl/cpu
+--index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
 
-# Pin if you like; these versions match your logs
-torch==2.9.1
-torchvision==0.24.1
-jsonschema==4.25.1
+pyyaml
+jsonschema
+matplotlib
+tqdm

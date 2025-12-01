@@ -1,17 +1,8 @@
 name: mnist_linear_last_strong
 dataset: { kind: mnist, split: test, batch_size: 64 }
 model:   { kind: SmallCNN, weights: out/mnist_smallcnn.pt }
-
-inject:
-  enabled: true
-  p: 1.0            # (will be overridden by the sweep)
-  bit_width: 32
-  target_layers: ["Linear[-1]"]   # <-- last dense layer (fragile)
-
+inject:  { enabled: true, p: 1.0, bit_width: 32, target_layers: ["Linear[-1]"] }
 trials:  { max: 471, seed_base: 42000 }
 logging: { path: out/runs_mnist_linear_last_strong.jsonl, validate: true }
-
-# turn on margin-based degradation so you see impact even when labels don't flip
-eval:    { mode: margin, delta: 0.15 }  # mark DEGRADED if avg margin drops by >= 0.15
-
+eval:    { mode: margin, delta: 0.15 }
 resume:  false

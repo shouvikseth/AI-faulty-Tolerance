@@ -1,5 +1,12 @@
-numpy
-tqdm
-pyyaml
-jsonschema
-torchvision  # will install with torch separately
+# Core
+torch               # PyTorch (Mac wheels include MPS on Apple Silicon)
+torchvision         # Datasets/transforms/models (MNIST baseline)
+pyyaml              # Read YAML experiment plans
+jsonschema          # Validate JSONL logs against the schema
+
+# Analysis / plots
+matplotlib          # PNG plots, HTML summaries use its data
+# (numpy/pillow will be pulled automatically)
+
+# QoL
+tqdm                # progress bars

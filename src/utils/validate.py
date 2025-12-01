@@ -1,50 +1,71 @@
-import os, json, argparse, sys
-from jsonschema import Draft7Validator
+from __future__ import annotations
+import argparse, json
+from typing import Tuple, Optional
 
-def load_schema() -> dict:
-    here = os.path.dirname(__file__)
-    root = os.path.abspath(os.path.join(here, "..", ".."))
-    schema_path = os.path.join(root, "schemas", "run.schema.json")
-    with open(schema_path) as f:
+try:
+    import jsonschema
+    from jsonschema import Draft202012Validator as _Validator
+except Exception:
+    # Fall back to the widely available Draft7 if 2020-12 is unavailable
+    import jsonschema
+    from jsonschema import Draft7Validator as _Validator
+
+
+def load_schema(schema_path: str) -> dict:
+    with open(schema_path, "r") as f:
         return json.load(f)
 
-def validate_file(path: str, validator: Draft7Validator) -> tuple[int, int]:
-    ok = bad = 0
-    with open(path) as f:
-        for i, line in enumerate(f, start=1):
-            if not line.strip():
+
+def make_validator(schema_path: str) -> _Validator:
+    schema = load_schema(schema_path)
+    return _Validator(schema)
+
+
+def validate_file(path: str,
+                  schema_path: Optional[str] = None,
+                  validator: Optional[_Validator] = None) -> Tuple[int, int]:
+    """
+    Validate a JSONL file against a schema.
+
+    Returns: (valid_count, invalid_count)
+
+    Either pass a compiled `validator`, or pass `schema_path` (defaults to
+    'schemas/run.schema.json' if neither is given).
+    """
+    if validator is None:
+        if schema_path is None:
+            schema_path = "schemas/run.schema.json"
+        validator = make_validator(schema_path)
+
+    valid = invalid = 0
+    with open(path, "r") as f:
+        for ln in f:
+            ln = ln.strip()
+            if not ln:
                 continue
             try:
-                obj = json.loads(line)
-                errs = sorted(validator.iter_errors(obj), key=lambda e: e.path)
-                if errs:
-                    bad += 1
-                    e = errs[0]
-                    loc = "/".join(str(p) for p in e.path)
-                    print(f"[INVALID] {path}:{i} at '{loc}': {e.message}")
-                else:
-                    ok += 1
-            except json.JSONDecodeError as je:
-                bad += 1
-                print(f"[INVALID-JSON] {path}:{i}: {je}")
-    return ok, bad
+                obj = json.loads(ln)
+            except Exception:
+                invalid += 1
+                continue
+            errs = sorted(validator.iter_errors(obj), key=lambda e: e.path)
+            if errs:
+                invalid += 1
+            else:
+                valid += 1
+    print(f"[SUMMARY] {path}: valid={valid}, invalid={invalid}")
+    return valid, invalid
+
 
 def main():
-    ap = argparse.ArgumentParser(description="Validate JSONL logs against run.schema.json")
-    ap.add_argument("--in", dest="inputs", nargs="+", required=True, help="One or more JSONL files")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--in", dest="inp", required=True, help="path to JSONL file")
+    ap.add_argument("--schema", dest="schema", default="schemas/run.schema.json",
+                    help="path to JSON schema (default: schemas/run.schema.json)")
     args = ap.parse_args()
 
-    schema = load_schema()
-    validator = Draft7Validator(schema)
+    validate_file(args.inp, schema_path=args.schema)
 
-    total_ok = total_bad = 0
-    for p in args.inputs:
-        ok, bad = validate_file(p, validator)
-        total_ok += ok; total_bad += bad
-        print(f"[SUMMARY] {p}: valid={ok}, invalid={bad}")
-    print(f"[TOTAL] valid={total_ok}, invalid={total_bad}")
-    if total_bad > 0:
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()

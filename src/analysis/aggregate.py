@@ -1,73 +1,71 @@
-import argparse, json, csv
-from collections import Counter, defaultdict
+from __future__ import annotations
+import argparse, json, glob, csv
+from collections import defaultdict, Counter
 
-def load_rows(path):
+def to_float(x):
+    try: return float(x)
+    except: return None
+
+def load_rows(paths):
     rows=[]
-    with open(path) as f:
-        for ln in f:
-            ln=ln.strip()
-            if not ln: continue
-            try: rows.append(json.loads(ln))
-            except: pass
+    for p in paths:
+        try:
+            with open(p) as f:
+                for ln in f:
+                    ln=ln.strip()
+                    if ln:
+                        try: rows.append(json.loads(ln))
+                        except: pass
+        except FileNotFoundError:
+            pass
     return rows
 
 def main():
-    ap=argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", required=True)
-    ap.add_argument("--out_prefix", default="out/summary")
-    args=ap.parse_args()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--glob", required=True, help="e.g. out/sweep_*_p*.jsonl or a single file")
+    ap.add_argument("--out_prefix", default="out/agg")
+    args = ap.parse_args()
 
-    rows=load_rows(args.inp)
+    rows = load_rows(glob.glob(args.glob))
     if not rows:
-        print("no rows")
+        print("no rows matched")
         return
 
-    # tallies
-    by_layer = defaultdict(lambda: Counter())
-    by_bit   = defaultdict(lambda: Counter())  # per layer -> bitpos counts
-
+    # per layer × p
+    layer_p = defaultdict(list)
     for r in rows:
-        layer = r.get("layer_id","?")
-        outc  = r.get("outcome","?")
-        by_layer[layer][outc]+=1
-        if "bitpos" in r and r["bitpos"] is not None:
-            by_bit[layer][("bit", r["bitpos"])]+=1
-            by_bit["ALL"][("bit", r["bitpos"])]+=1
+        p = to_float(r.get("p"))
+        lid = r.get("layer_id","?")
+        if p is None: continue
+        layer_p[(lid,p)].append(r)
 
-    # print per-layer summary
-    print("\nPer-layer outcomes:")
-    print("layer_id, total, CLEAN, WRONG, DETECTED, CRASH, SDC_rate")
-    layer_rows=[]
-    for layer,cnts in by_layer.items():
-        tot=sum(cnts.values())
-        wrong=cnts.get("WRONG",0)
-        sdc= wrong/tot if tot else 0.0
-        line=[layer, tot, cnts.get("CLEAN",0), wrong, cnts.get("DETECTED",0), cnts.get("CRASH",0), f"{sdc:.4f}"]
-        layer_rows.append(line)
-        print(",".join(map(str,line)))
+    with open(f"{args.out_prefix}_layer_p.csv","w",newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["layer_id","p","trials","wrong","degraded","wrong_rate","impact_rate","avg_margin_drop_impacted"])
+        for (lid,p), rs in sorted(layer_p.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+            tot=len(rs)
+            wcnt = sum(r.get("outcome")=="WRONG" for r in rs)
+            dcnt = sum(r.get("outcome")=="DEGRADED" for r in rs)
+            drops=[r.get("margin_drop_avg") for r in rs if r.get("outcome") in ("WRONG","DEGRADED") and isinstance(r.get("margin_drop_avg"),(int,float))]
+            avgd = sum(drops)/len(drops) if drops else 0.0
+            w.writerow([lid, p, tot, wcnt, dcnt, (wcnt/tot if tot else 0.0), ((wcnt+dcnt)/tot if tot else 0.0), avgd])
 
-    # write CSVs
-    with open(args.out_prefix+"_layer.csv","w",newline="") as f:
-        w=csv.writer(f); w.writerow(["layer_id","total","CLEAN","WRONG","DETECTED","CRASH","SDC_rate"])
-        w.writerows(layer_rows)
+    # per layer bitpos histogram
+    bit_hist = defaultdict(Counter)
+    for r in rows:
+        lid = r.get("layer_id","?")
+        bp = r.get("bitpos")
+        if isinstance(bp,int):
+            bit_hist[lid][bp]+=1
 
-    if by_bit:
-        bit_rows=[]
-        print("\nPer-bit (aggregated across trials) for ALL layers (if available):")
-        print("bitpos, count")
-        agg = defaultdict(int)
-        for k,v in by_bit["ALL"].items():
-            _,bp=k
-            agg[bp]+=v
-        for bp in sorted(agg):
-            print(f"{bp},{agg[bp]}")
-            bit_rows.append([bp, agg[bp]])
-        with open(args.out_prefix+"_bitpos.csv","w",newline="") as f:
-            w=csv.writer(f); w.writerow(["bitpos","count"]); w.writerows(bit_rows)
+    with open(f"{args.out_prefix}_bitpos.csv","w",newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["layer_id","bitpos","count"])
+        for lid, ctr in sorted(bit_hist.items()):
+            for bp,count in sorted(ctr.items()):
+                w.writerow([lid, bp, count])
 
-    print(f"\n[wrote] {args.out_prefix}_layer.csv")
-    if by_bit:
-        print(f"[wrote] {args.out_prefix}_bitpos.csv")
+    print("[aggregate] wrote", f"{args.out_prefix}_layer_p.csv", "and", f"{args.out_prefix}_bitpos.csv")
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

@@ -1,139 +1,252 @@
-
-# src/analysis/report_html.py
-import os, json, argparse, math
-import matplotlib.pyplot as plt
-from collections import Counter, defaultdict
+from __future__ import annotations
+import argparse, json, glob, math, os, sys
+from collections import defaultdict, Counter
 from datetime import datetime
 
-def load_jsonl(path):
-    rows = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line: continue
-            try:
-                rows.append(json.loads(line))
-            except Exception:
-                pass
-    return rows
-
-def ensure_dir(d):
-    if d and not os.path.exists(d):
-        os.makedirs(d, exist_ok=True)
-
-def save_bar(data_pairs, path, title, xlabel, ylabel):
-    labels = [k for k,_ in data_pairs]
-    vals   = [v for _,v in data_pairs]
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.bar(range(len(vals)), vals)
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_xticks(range(len(vals)))
-    ax.set_xticklabels(labels, rotation=45, ha="right")
-    fig.tight_layout()
-    fig.savefig(path, dpi=120)
-    plt.close(fig)
-
-def save_hist(vals, path, title, xlabel, bins=None):
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.hist(vals, bins=bins if bins else 'auto')
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel("count")
-    fig.tight_layout()
-    fig.savefig(path, dpi=120)
-    plt.close(fig)
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", required=True, help="jsonl log file")
-    ap.add_argument("--out", dest="out_html", default="out/report.html")
-    args = ap.parse_args()
-
-    rows = load_jsonl(args.inp)
-    if not rows:
-        raise SystemExit(f"no rows found in {args.inp}")
-
-    # tallies
-    outcome_ct = Counter(r.get("outcome","UNK") for r in rows)
-    total = sum(outcome_ct.values())
-    wrong = outcome_ct.get("WRONG", 0)
-    sdc_rate = wrong / total if total else 0.0
-
-    # per-layer WRONG Pareto
-    wrong_by_layer = Counter()
-    for r in rows:
-        if r.get("outcome") == "WRONG":
-            lid = r.get("layer_id","?")
-            wrong_by_layer[lid] += 1
-
-    pareto = sorted(wrong_by_layer.items(), key=lambda kv: kv[1], reverse=True)
-    assets = "out/report_assets"
-    ensure_dir(assets)
-
-    p_out = os.path.join(assets, "pareto_wrong_by_layer.png")
-    save_bar(pareto or [("none", 0)], p_out, "WRONG by layer_id (Pareto)", "layer_id", "WRONG count")
-
-    # bitpos histogram (when present)
-    bitpos_vals = [r["bitpos"] for r in rows if "bitpos" in r and r["bitpos"] is not None]
-    bp_out = os.path.join(assets, "bitpos_hist.png")
-    if bitpos_vals:
-        save_hist(bitpos_vals, bp_out, "Bit position histogram", "bit position (0..31)", bins=32)
-
-    # simple outcome bar
-    oc_out = os.path.join(assets, "outcomes.png")
-    save_bar(sorted(outcome_ct.items()), oc_out, "Outcomes", "outcome", "count")
-
-    # html
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    html = f"""<!doctype html>
-<html>
+HTML_TMPL = """<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>SDC Report</title>
+<title>{title}</title>
 <style>
-body {{ font-family: -apple-system, system-ui, sans-serif; margin: 24px; }}
-h1,h2 {{ margin-bottom: 0.2rem; }}
-.card {{ border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin-bottom: 16px; }}
+body {{ font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #111; }}
+h1 {{ margin: 0 0 8px 0; }}
+h2 {{ margin-top: 28px; }}
 small {{ color: #666; }}
-img {{ max-width: 100%; height: auto; }}
+code, pre {{ background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }}
+.table {{ border-collapse: collapse; width: 100%; max-width: 1100px; }}
+.table th, .table td {{ border-bottom: 1px solid #eaecef; padding: 8px 10px; text-align: left; }}
+.kpi {{ display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; margin: 12px 0; }}
+.card {{ border: 1px solid #eaecef; border-radius: 10px; padding: 14px; background: #fff; }}
+.badge {{ display:inline-block; padding: 2px 8px; border-radius: 999px; border:1px solid #eaecef; font-size: 12px; }}
+.row {{ display:flex; gap: 16px; flex-wrap: wrap; }}
+.meta {{ color:#555; font-size: 14px; }}
+footer {{ color:#6a737d; margin-top: 32px; font-size: 12px; }}
 </style>
 </head>
 <body>
-<h1>SDC Report</h1>
-<small>generated {ts}</small>
-
-<div class="card">
-  <h2>Summary</h2>
-  <p><b>File:</b> {args.inp}</p>
-  <p><b>Total trials:</b> {total} &nbsp; <b>WRONG:</b> {wrong} &nbsp; <b>SDC rate:</b> {sdc_rate:.4%}</p>
+<h1>{title}</h1>
+<div class="meta">
+Generated: {now} · Files: {nfiles} · Rows: {nrows} · Layers: {nlayers}
 </div>
 
-<div class="card">
-  <h2>Outcomes</h2>
-  <img src="{os.path.relpath(oc_out, start=os.path.dirname(args.out_html))}">
+<div class="kpi">
+  <div class="card">
+    <div><strong>Total WRONG</strong></div>
+    <div style="font-size:28px">{wrong_total}</div>
+    <small>Rate: {wrong_rate:.3%}</small>
+  </div>
+  <div class="card">
+    <div><strong>Total DEGRADED</strong></div>
+    <div style="font-size:28px">{degraded_total}</div>
+    <small>Rate: {degraded_rate:.3%}</small>
+  </div>
+  <div class="card">
+    <div><strong>WRONG+DEGRADED</strong></div>
+    <div style="font-size:28px">{impact_total}</div>
+    <small>Rate: {impact_rate:.3%}</small>
+  </div>
+  <div class="card">
+    <div><strong>Avg margin drop (impacted)</strong></div>
+    <div style="font-size:28px">{avg_drop_impacted:.4f}</div>
+    <small>Only rows marked WRONG or DEGRADED</small>
+  </div>
 </div>
 
-<div class="card">
-  <h2>Pareto — WRONG by layer</h2>
-  <img src="{os.path.relpath(p_out, start=os.path.dirname(args.out_html))}">
-</div>
+<h2>Per-p breakdown (aggregated across layers)</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>p</th>
+      <th>Trials</th>
+      <th>WRONG</th>
+      <th>DEGRADED</th>
+      <th>WRONG+DEG</th>
+      <th>Rate (WRONG)</th>
+      <th>Rate (WRONG+DEG)</th>
+      <th>Avg margin drop (impacted)</th>
+    </tr>
+  </thead>
+  <tbody>
+  {rows_per_p}
+  </tbody>
+</table>
 
-{"<div class='card'><h2>Bit position histogram</h2><img src='" + os.path.relpath(bp_out, start=os.path.dirname(args.out_html)) + "'></div>" if bitpos_vals else ""}
+<h2>Per-layer × p matrix</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>p</th>
+      <th>Trials</th>
+      <th>WRONG</th>
+      <th>DEGRADED</th>
+      <th>Total</th>
+      <th>Rate (WRONG)</th>
+      <th>Rate (WRONG+DEG)</th>
+    </tr>
+  </thead>
+  <tbody>
+  {rows_per_layer_p}
+  </tbody>
+</table>
 
-</body></html>
+<h2>Bit position histogram (only rows with flips)</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Bit position</th>
+      <th>Count</th>
+    </tr>
+  </thead>
+  <tbody>
+  {rows_bitpos}
+  </tbody>
+</table>
+
+<footer>
+Report generated by <code>src/analysis/report_html.py</code>
+</footer>
+</body>
+</html>
 """
-    # ensure parent
-    out_dir = os.path.dirname(args.out_html)
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
+
+def to_float(x):
+    try: return float(x)
+    except: return None
+
+def load_rows(paths):
+    rows=[]
+    for p in paths:
+        try:
+            with open(p) as f:
+                for ln in f:
+                    ln=ln.strip()
+                    if ln:
+                        try: rows.append(json.loads(ln))
+                        except: pass
+        except FileNotFoundError:
+            pass
+    return rows
+
+def fmt_p(p):
+    if p is None: return "?"
+    if p == 0: return "0"
+    exp = int(math.floor(math.log10(p)))
+    base = p / (10**exp)
+    if abs(base-1.0) < 1e-10:
+        return f"1e{exp}"
+    return f"{base:.1f}e{exp}"
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--in", dest="inp", required=False, help="path to a JSONL")
+    ap.add_argument("--glob", required=False, help="glob like out/sweep_*_p*.jsonl")
+    ap.add_argument("--out", dest="out_html", default="out/report.html")
+    args = ap.parse_args()
+
+    paths = []
+    if args.inp:
+        paths.append(args.inp)
+    if args.glob:
+        paths.extend(glob.glob(args.glob))
+
+    if not paths:
+        print("error: provide --in and/or --glob", file=sys.stderr)
+        sys.exit(2)
+
+    rows = load_rows(paths)
+    if not rows:
+        os.makedirs(os.path.dirname(args.out_html) or ".", exist_ok=True)
+        with open(args.out_html,"w") as f:
+            f.write("<html><body><p>No rows.</p></body></html>")
+        print("[report] no rows; wrote", args.out_html)
+        return
+
+    nfiles = len(paths)
+    nrows = len(rows)
+    layers = sorted(set(r.get("layer_id","?") for r in rows))
+    outcomes = Counter(r.get("outcome","?") for r in rows)
+    wrong_total = outcomes.get("WRONG",0)
+    degraded_total = outcomes.get("DEGRADED",0)
+    impact_total = wrong_total + degraded_total
+
+    wrong_rate = wrong_total / nrows if nrows else 0.0
+    impact_rate = impact_total / nrows if nrows else 0.0
+    degraded_rate = degraded_total / nrows if nrows else 0.0
+
+    drops = [r.get("margin_drop_avg") for r in rows
+             if r.get("outcome") in ("WRONG","DEGRADED")
+             and isinstance(r.get("margin_drop_avg"), (int,float))]
+    avg_drop_impacted = sum(drops)/len(drops) if drops else 0.0
+
+    # per-p
+    by_p = defaultdict(list)
+    for r in rows:
+        p = to_float(r.get("p"))
+        if p is None: continue
+        by_p[p].append(r)
+    rows_per_p_html = []
+    for p, rs in sorted(by_p.items(), key=lambda kv: kv[0]):
+        tot = len(rs)
+        w = sum(r.get("outcome")=="WRONG" for r in rs)
+        d = sum(r.get("outcome")=="DEGRADED" for r in rs)
+        imp = w + d
+        dr = [r.get("margin_drop_avg") for r in rs
+              if r.get("outcome") in ("WRONG","DEGRADED")
+              and isinstance(r.get("margin_drop_avg"), (int,float))]
+        avgd = sum(dr)/len(dr) if dr else 0.0
+        rows_per_p_html.append(
+            f"<tr><td><span class='badge'>{fmt_p(p)}</span></td><td>{tot}</td><td>{w}</td><td>{d}</td><td>{imp}</td>"
+            f"<td>{(w/tot if tot else 0):.3%}</td><td>{(imp/tot if tot else 0):.3%}</td><td>{avgd:.4f}</td></tr>"
+        )
+
+    # per-layer × p
+    by_layer_p = defaultdict(list)
+    for r in rows:
+        p = to_float(r.get("p"))
+        lid = r.get("layer_id","?")
+        if p is None: continue
+        by_layer_p[(lid,p)].append(r)
+    rows_per_layer_p_html=[]
+    for (lid,p), rs in sorted(by_layer_p.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        tot=len(rs)
+        w = sum(r.get("outcome")=="WRONG" for r in rs)
+        d = sum(r.get("outcome")=="DEGRADED" for r in rs)
+        rows_per_layer_p_html.append(
+            f"<tr><td>{lid}</td><td><span class='badge'>{fmt_p(p)}</span></td><td>{tot}</td><td>{w}</td><td>{d}</td>"
+            f"<td>{w+d}</td><td>{(w/tot if tot else 0):.3%}</td><td>{((w+d)/tot if tot else 0):.3%}</td></tr>"
+        )
+
+    # bit position histogram
+    bit_hist = defaultdict(Counter)  # layer_id -> Counter(bitpos)
+    for r in rows:
+        lid = r.get("layer_id","?")
+        bp = r.get("bitpos")
+        if isinstance(bp,int):
+            bit_hist[lid][bp]+=1
+    rows_bitpos_html=[]
+    for lid, ctr in sorted(bit_hist.items()):
+        for bp,count in sorted(ctr.items()):
+            rows_bitpos_html.append(f"<tr><td>{lid}</td><td>{bp}</td><td>{count}</td></tr>")
+
+    html = HTML_TMPL.format(
+        title="SDC Report",
+        now=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        nfiles=nfiles, nrows=nrows, nlayers=len(layers),
+        wrong_total=wrong_total, degraded_total=degraded_total, impact_total=impact_total,
+        wrong_rate=wrong_rate, degraded_rate=degraded_rate, impact_rate=impact_rate,
+        avg_drop_impacted=avg_drop_impacted,
+        rows_per_p="\n".join(rows_per_p_html),
+        rows_per_layer_p="\n".join(rows_per_layer_p_html),
+        rows_bitpos="\n".join(rows_bitpos_html),
+    )
+
+    os.makedirs(os.path.dirname(args.out_html) or ".", exist_ok=True)
     with open(args.out_html, "w") as f:
         f.write(html)
+    print("[report] wrote", args.out_html)
 
-    print(f"[report] wrote {args.out_html}")
-
-if __name__ == "__main__":
+if __name__=="__main__":
     main()

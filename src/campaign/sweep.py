@@ -1,4 +1,4 @@
-# src/campaign/sweep.py
+from __future__ import annotations
 import argparse, os, subprocess, tempfile, yaml, sys, re
 
 def sanitize_for_filename(s: str) -> str:
@@ -9,16 +9,17 @@ def run_once(plan_path, p_override, out_path, shard, shards, resume):
     with open(plan_path) as f:
         cfg = yaml.safe_load(f)
 
-    # numeric p
     try:
         p_val = float(p_override)
     except ValueError:
         raise SystemExit(f"Invalid p value: {p_override}")
 
+    # override probability and output path
+    cfg.setdefault("inject", {})
     cfg["inject"]["p"] = p_val
-    cfg["logging"]["path"] = out_path           # <-- IMPORTANT: per-p log file
-
-    # unique plan name (nice for debugging)
+    cfg.setdefault("logging", {})
+    cfg["logging"]["path"] = out_path
+    # friendly plan name
     base_name = cfg.get("name", "plan")
     cfg["name"] = f"{base_name}_p{p_val:.0e}"
 
@@ -40,7 +41,7 @@ def run_once(plan_path, p_override, out_path, shard, shards, resume):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan", required=True)
-    ap.add_argument("--p_list", required=True, help="comma-separated, e.g. 1e-9,1e-7,1e-6,1e-5,1e-4,1e-3")
+    ap.add_argument("--p_list", required=True, help="comma-separated, e.g. 1e-2,5e-2,1e-1,3e-1,1")
     ap.add_argument("--out_prefix", required=True)
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--shards", type=int, default=1)
@@ -50,8 +51,7 @@ def main():
     plist = [x.strip() for x in args.p_list.split(",") if x.strip()]
     for p in plist:
         try:
-            p_val = float(p)
-            label = f"{p_val:.0e}"   # e.g., 1e-06
+            p_val = float(p); label = f"{p_val:.0e}"
         except ValueError:
             label = p
         fname = sanitize_for_filename(label)

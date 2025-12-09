@@ -1,0 +1,13 @@
+.git
+.out
+out
+data
+__pycache__/
+*.pyc
+*.pyo
+*.pt
+*.jsonl
+src/.venv
+.DS_Store
+
+.venv

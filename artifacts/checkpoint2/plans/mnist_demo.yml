@@ -1,0 +1,26 @@
+name: mnist_tensor_demo
+
+dataset:
+  kind: mnist
+  split: test
+  batch_size: 64
+
+model:
+  kind: SmallCNN
+  weights: out/mnist_smallcnn.pt   # trained by your drift gate; if missing, we train 1 epoch
+
+inject:
+  enabled: true
+  p: 1.0e-6
+  bit_width: 32
+  target_layers: ["Linear[-1]"]    # flip in last Linear; add more later as needed
+
+trials:
+  max: 100                         # upper bound across the entire split (before sharding)
+  seed_base: 2025                  # trial_seed = seed_base + global_trial_idx
+
+logging:
+  path: out/runs_mnist_tensor.jsonl
+  validate: true                   # validate with schemas/run.schema.json after run
+
+resume: true                       # skip trials already logged (same plan+shard)

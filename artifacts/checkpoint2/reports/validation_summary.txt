@@ -1,0 +1,80 @@
+[validate] artifacts/checkpoint2/logs/runs_mnist_conv_strong.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_conv_strong.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/runs_mnist_conv.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_conv.jsonl: valid=314, invalid=0
+[validate] artifacts/checkpoint2/logs/runs_mnist_force.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_force.jsonl: valid=156, invalid=1
+[validate] artifacts/checkpoint2/logs/runs_mnist_linear_all.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_linear_all.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/runs_mnist_linear0_strong.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_linear0_strong.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/runs_mnist_tensor.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_tensor.jsonl: valid=1057, invalid=0
+[validate] artifacts/checkpoint2/logs/runs_mnist_topk.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/runs_mnist_topk.jsonl: valid=150, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1e00.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p1em02.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_conv_signexpK16_p3em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1e00.jsonl: valid=314, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1em01.jsonl: valid=314, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p1em02.jsonl: valid=314, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_linear_last_signexpK16_p3em01.jsonl: valid=314, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1e00.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1em01.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p1em02.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p3em01.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p5em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_expK4_p5em02.jsonl: valid=471, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_p1e00.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_p1em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_p1em02.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_p3em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_conv_p5em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_conv_p5em02.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1e00.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p1em02.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p3em01.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p5em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_linear_expK4_p5em02.jsonl: valid=157, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1e00.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1e00.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em01.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em02.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em02.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em03.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em03.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em04.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em04.jsonl: valid=200, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em05.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em05.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em06.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em06.jsonl: valid=200, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em07.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em07.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em09.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p1em09.jsonl: valid=100, invalid=0
+[validate] artifacts/checkpoint2/logs/sweep_mnist_tensor_p3em01.jsonl
+[SUMMARY] artifacts/checkpoint2/logs/sweep_mnist_tensor_p3em01.jsonl: valid=100, invalid=0

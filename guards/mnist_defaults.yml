@@ -1,0 +1,25 @@
+# Default guard choices for MNIST/logit faults (p=0.5, exp bits, K=3 per image)
+baseline:
+  clean_error: 0.0191
+
+max_safety:  # best accuracy at ~3x cost
+  mode: mix
+  tau: 0.9990
+  delta: 0.050
+  digits: 2
+  k_signals: null
+  include_argdiff: null
+  measured:
+    final_error: 0.0191
+    cost_x: 3.00
+
+cheaper:     # great tradeoff (beats vote-3 on both axes)
+  mode: mixk
+  k_signals: 3
+  include_argdiff: 0
+  tau: 0.9990
+  delta: 0.080
+  digits: 2
+  measured:
+    final_error: 0.0468
+    cost_x: 2.73

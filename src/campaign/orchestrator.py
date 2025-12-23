@@ -45,44 +45,71 @@ def top1_and_margin(logits: torch.Tensor):
 
 # ----------------- model/dataset ---------------------
 
-def build_dataloader(cfg: dict) -> Tuple[DataLoader, str]:
+
+def build_dataloader(dataset_cfg):
     """
-    Supports: MNIST (split: train|test), batch_size.
+    dataset:
+      kind: mnist | cifar10
+      split: test | train
+      batch_size: int
     """
-    kind = (cfg.get("kind") or "mnist").lower()
-    split = (cfg.get("split") or "test").lower()
-    bs = int(cfg.get("batch_size") or 64)
+    import torchvision as tv
+    import torchvision.transforms as T
+    from torch.utils.data import DataLoader
+
+    kind = str(dataset_cfg.get("kind", "")).lower()
+    split = str(dataset_cfg.get("split", "test")).lower()
+    batch_size = int(dataset_cfg.get("batch_size", 64))
+    is_train = (split == "train")
 
     if kind == "mnist":
         tfm = T.Compose([T.ToTensor()])
-        is_train = (split == "train")
         ds = tv.datasets.MNIST(root="./data", train=is_train, download=True, transform=tfm)
-        dl = DataLoader(ds, batch_size=bs, shuffle=False)
-        return dl, f"MNIST:{split}"
-    else:
-        raise ValueError(f"Unsupported dataset kind: {kind}")
+        return DataLoader(ds, batch_size=batch_size, shuffle=False), f"MNIST:{split}"
 
-def build_model(cfg: dict, device: str) -> nn.Module:
+    if kind == "cifar10":
+        # match the ResNet-18 input size used in src/bench/cifar10.py
+        tfm = T.Compose([T.Resize(224), T.ToTensor()])
+        ds = tv.datasets.CIFAR10(root="./data", train=is_train, download=True, transform=tfm)
+        return DataLoader(ds, batch_size=batch_size, shuffle=False), f"CIFAR10:{split}"
+
+    raise ValueError(f"Unsupported dataset kind: {kind}")
+
+
+def build_model(model_cfg, device=None):
     """
-    Supports: SmallCNN (from src.bench.mnist.SmallCNN)
+    Build a model from a small schema:
+      model:
+        kind: SmallCNN | ResNet18
+        weights: path/to.pt
     """
-    kind = cfg.get("kind") or "SmallCNN"
-    weights = cfg.get("weights")
-    if kind == "SmallCNN":
+    import torch
+    import torch.nn as nn
+    import torchvision as tv
+
+    kind = str(model_cfg.get("kind", "")).lower()
+
+    if kind == "smallcnn":
         from src.bench.mnist import SmallCNN
         m = SmallCNN()
+
+    elif kind == "resnet18":
+        # IMPORTANT: match training head so keys align (fc.fc.*)
+        class Head(nn.Module):
+            def __init__(self, in_dim=512, num_classes=10):
+                super().__init__()
+                self.fc = nn.Linear(in_dim, num_classes)
+            def forward(self, x): return self.fc(x)
+
+        m = tv.models.resnet18(weights=None)
+        m.fc = Head(512, 10)
+
     else:
         raise ValueError(f"Unsupported model kind: {kind}")
 
-    m.to(device)
-    if weights:
-        sd = torch.load(weights, map_location=device)
-        m.load_state_dict(sd, strict=True)
-    m.eval()
+    if device is not None:
+        m = m.to(device)
     return m
-
-
-# ------------- target selection helpers -------------
 
 def select_modules_by_specs(model: nn.Module, specs: List[str]) -> List[Tuple[str, nn.Module]]:
     """

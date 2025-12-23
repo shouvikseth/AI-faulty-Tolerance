@@ -1,0 +1,12 @@
+name: mnist_linear_last_vote
+dataset: { kind: mnist, split: test, batch_size: 64 }
+model:   { kind: SmallCNN, weights: out/mnist_smallcnn.pt }
+inject:
+  enabled: true
+  p: 0.3
+  bit_width: 32
+  target_layers: ["Linear[-1]"]
+trials:  { max: 200, seed_base: 70000 }
+logging: { path: out/ignore_vote_logs.jsonl, validate: false }  # not used by vote_eval
+eval:    { mode: margin, delta: 0.15 }
+resume:  false

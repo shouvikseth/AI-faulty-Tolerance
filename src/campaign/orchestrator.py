@@ -10,7 +10,7 @@ import torchvision as tv
 import torchvision.transforms as T
 from torch.utils.data import DataLoader
 
-from src.inj.tensor.dethook import attach_deterministic_hook, SiteSelector
+from inj.tensor.dethook import attach_deterministic_hook, SiteSelector
 from src.utils.log import append_jsonl  # assumes you already have this
 # optional: validator at the end
 try:

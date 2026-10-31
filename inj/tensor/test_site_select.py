@@ -1,7 +1,7 @@
 
-# src/inj/tensor/test_site_select.py
+# inj/tensor/test_site_select.py
 import torch
-from src.inj.tensor.site_select import SiteSelector, SitePlan
+from inj.tensor.site_select import SiteSelector, SitePlan
 
 def main():
     sel1 = SiteSelector(seed=123, p_event=0.25, bit_width=32)

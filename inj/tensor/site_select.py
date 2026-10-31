@@ -1,5 +1,5 @@
 
-# src/inj/tensor/site_select.py
+# inj/tensor/site_select.py
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple

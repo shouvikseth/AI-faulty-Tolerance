@@ -1,6 +1,6 @@
-# src/inj/tensor/test_flip.py
+# inj/tensor/test_flip.py
 import torch
-from src.inj.tensor.flip import TensorBitFlipper
+from inj.tensor.flip import TensorBitFlipper
 
 def main():
     device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
@@ -10,7 +10,7 @@ def main():
     x = torch.randn(64, 64, dtype=torch.float32, device=device)
 
     # Force an obvious flip for the demo: flip the SIGN bit (31) so a value changes from + to -
-    flipper = TensorBitFlipper(p_event=1.0, bit_mode=31, seed=123)
+    flipper = TensorBitFlipper(p=1.0, bit_mode=31, seed=123)
 
     y = flipper.flip(x)
 
@@ -26,7 +26,7 @@ def main():
     print("max |x - y|:", max_abs_diff)
 
     # Sanity: with p=0, tensor must be IDENTICAL
-    flipper0 = TensorBitFlipper(p_event=0.0, seed=123)
+    flipper0 = TensorBitFlipper(p=0.0, seed=123)
     z = flipper0.flip(x)
     print("p=0 → torch.equal (expect True):", torch.equal(x, z))
 

@@ -1,9 +1,9 @@
-# src/inj/tensor/demo_det_mnist.py
+# inj/tensor/demo_det_mnist.py
 import torch, torchvision as tv, torchvision.transforms as T
 from torch.utils.data import DataLoader
 from src.bench.mnist import SmallCNN
-from src.inj.tensor.site_select import SiteSelector
-from src.inj.tensor.dethook import attach_deterministic_hook
+from inj.tensor.site_select import SiteSelector
+from inj.tensor.dethook import attach_deterministic_hook
 
 def main():
     device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
